@@ -134,7 +134,7 @@ function generatePhoneNumber() {
 app.post('/win11_login', (req, res) => {
   res.send({code: 0, message: '登录成功', data: {
     user_name: '李白',
-    avatar_img: 'http://localhost:8080/avatar_img/10287029114.jpg',
+    avatar_img: 'http://154.8.175.183:8080/avatar_img/10287029114.jpg',
     telephone_number: '15581740744',
   }})
 });
