@@ -343,10 +343,10 @@ const generateMockData2 = (count) => {
     const imgrci = chance.integer({ min: 0, max: 2 });
     return {
       id: index + 1,
-      title: chance.sentence({ words: 5 }), // 随机生成 5 个词的标题
+      title: chance.sentence({ words: 1 }), // 随机生成 5 个词的标题
       imageUrl: mateImgUrlList[imgrci], 
       imgWith: mateImgUrlMap[imgrci][0],
-      imgHeight: index%5 === 0 ? 312 : mateImgUrlMap[imgrci][1],
+      imgHeight: index%5 === 0 ? 285 : mateImgUrlMap[imgrci][1],
       type: index % 5 === 0 ? 'video' : 'img',
       videoUrl: index % 5 === 0 ? '/100721_1743403922.mp4' : '',
       user: {
