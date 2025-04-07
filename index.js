@@ -3,6 +3,9 @@ const app = express();
 const port = 8080;
 const cors = require('cors');
 const axios = require('axios'); // 用于发起 HTTP 请求
+const fs = require('fs').promises; // 使用 promises 版本的 fs
+const path = require('path');
+const cheerio = require('cheerio');
 
 
 // const cookieParser = require("cookie-parser");  
@@ -20,12 +23,65 @@ app.use(express.static('public'))
 // 启用所有跨域请求
 app.use(cors());
 
-app.get('/news', (req, res) => {
-  res.send({
-    code: 0,
-    message: '请求成功',
-    data: [],
-  });
+
+
+
+const NEWS_FILE = path.join(__dirname, 'news.json');
+// 获取当前日期的函数（只包含年月日）
+function getCurrentDate() {
+  const today = new Date();
+  return today.toISOString().split('T')[0]; // 返回格式如 "2025-04-03"
+}
+// 模拟存储的数据
+let cachedData = {
+  data: null,
+  lastUpdated: null
+};
+// 读取新闻文件
+async function readNewsFile() {
+  try {
+    const data = await fs.readFile(NEWS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // 如果文件不存在或读取失败，返回空对象
+    return { data: null, lastUpdated: null };
+  }
+}
+
+// 写入新闻文件
+async function writeNewsFile(data) {
+  await fs.writeFile(NEWS_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+app.get('/news', async (req, res) => {
+  const currentDate = getCurrentDate();
+  cachedData = await readNewsFile();
+  // 检查缓存数据是否存在且日期是否匹配
+  if (cachedData.data && cachedData.lastUpdated === currentDate) {
+    // 如果数据存在且是今天的，直接返回缓存数据
+    res.send({
+      code: 0,
+      message: '请求成功',
+      data: cachedData.data,
+    });
+    return;
+  }
+  // 聚合数据新闻接口
+  axios.get('http://v.juhe.cn/toutiao/index?key=c476b36cf79542e809245707aa67c2e9&type=guoji').then(async ({ data }) => {
+    const newData = data.result.data;
+    // 更新缓存
+    cachedData = {
+      data: newData,
+      lastUpdated: currentDate
+    };
+    // 将新数据写入文件
+    await writeNewsFile(cachedData);
+    // 返回新数据
+    res.send({
+      code: 0,
+      message: '请求成功',
+      data: newData,
+    });
+  })
 });
 
 
@@ -55,7 +111,8 @@ app.get('/weather', (req, res) => {
   const params = {
       latitude: 39.9042, // 北京纬度
       longitude: 116.4074, // 北京经度
-      current: 'temperature_2m,weathercode,pressure_msl,windspeed_10m,precipitation', // 当前天气
+      current: 'temperature_2m,weathercode,pressure_msl,windspeed_10m,precipitation,precipitation_probability', // 当前天气
+      // hourly: 'precipitation_probability',
       daily: 'temperature_2m_max,temperature_2m_min,weathercode', // 每日数据
       forecast_days: 5, // 未来 5 天
       timezone: 'Asia/Shanghai' // 时区
@@ -72,7 +129,7 @@ app.get('/weather', (req, res) => {
       pressure: `${weatherData.current.pressure_msl}hPa`, // 大气压 (hPa)
       wind_speed: `${weatherData.current.windspeed_10m}km/h`, // 风速 (km/h)
       precipitation: `${weatherData.current.precipitation}mm`, // 降水量 (mm)
-      precipitation_probability: '20%', // 降水概率
+      precipitation_probability: `${weatherData.current.precipitation_probability}%`, // 降水概率
     };
 
     // // 整理未来 5 天每日数据（带单位）
@@ -88,7 +145,8 @@ app.get('/weather', (req, res) => {
       message: '请求成功',
       data: {
         ...currentWeather,
-        future_weather: dailyData
+        future_weather: dailyData,
+        info: weatherData,
       }
     });
   }).catch((e) => {
@@ -105,15 +163,55 @@ app.get('/stock_price', (req, res) => {
   });
 });
 
-let access_token = '24.d3299a28bf7b7c79bd30dcf0ccbdd60b.2592000.1711816210.282335-41731833';
+// let access_token = '24.d3299a28bf7b7c79bd30dcf0ccbdd60b.2592000.1711816210.282335-41731833';
 // let access_token = '24.4cdd94cd61a959652b52538642ee3d1d.2592000.1700815691.282335-41731833';
+// bce-v3/ALTAK-RBhIqn9HNvnL0qCojnQyp/38a8fb79d980765322e881f1de6a80caaddf37fb
 app.post('/wenxinworkshop', (req, res) => {
+  const { messages } = req.body;
+  const options = {
+    'method': 'POST',
+    'url': 'https://qianfan.baidubce.com/v2/chat/completions',
+    'headers': {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer bce-v3/ALTAK-RBhIqn9HNvnL0qCojnQyp/38a8fb79d980765322e881f1de6a80caaddf37fb',
+            'appid': 'app-Ba3oKfcM'
+    },
+    data: JSON.stringify({
+      "model": "ernie-x1-32k-preview",
+      "messages": messages,
+      "web_search": {
+        "enable": false,
+        "enable_citation": false,
+        "enable_trace": false
+      }
+    }),
+  }
+  axios(options)
+  .then(response => {
+    const resultMessage = response.data.choices[0].message.content
+    res.send({code: 0, message: '请求成功', data: {result: resultMessage || '抱歉，可以把问题描述的在完整一些么'}});
+  })
+  .catch(error => {
+    res.send({code: 0, message: '请求成功', data: {result: '服务器忙请稍后再试'}});
+  })
 });
 
 const titleRegex = /<title>(.*?)<\/title>/;
 const iconRegex = /<link[^>]*(rel=["']icon["']|rel=["']shortcut icon["'])[^>]*href=["']([^"']+)["']/g;
 app.get('/get_title_icon', (req, res) => {
-  res.send({code: 0, message: '请求成功', data: ''});
+  const url = req.query.src; // 从查询参数获取目标 URL
+  axios.get(url).then(response => {
+    const $ = cheerio.load(response.data);
+    const title = $('title').text();
+    const favicon = $('link[rel="icon"]').attr('href') || $('link[rel="shortcut icon"]').attr('href');
+    // 如果 favicon 是相对路径，转为绝对路径
+    const faviconUrl = favicon ? new URL(favicon, url).href : null;
+    res.send({code: 0, message: '请求成功', data: {
+      title,
+      favicon: faviconUrl,
+    }});
+  });
+  
 });
 
 // 登录window11

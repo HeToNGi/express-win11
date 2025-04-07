@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POKEDex 口袋怪兽</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+    html,body {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: 'Outfit', sans-serif;
+    }
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    .loading {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff;
+    }
+    .loading img {
+      width: 100px;
+      animation: rotate 2s linear infinite;
+    }
+    @keyframes movetop {
+      from {
+        transform: translateY(0px);
+      }
+      to {
+        transform: translateY(-100%);
+        display: none;
+      }
+    }
+    @keyframes moveleft {
+      from {
+        transform: translateX(0px);
+      }
+      to {
+        transform: translateX(-100%);
+      }
+    }
+    @keyframes moveleft {
+      from {
+        transform: translateX(-100%);
+      }
+      to {
+        transform: translateX(0px);
+      }
+    }
+    .movetop {
+      animation: movetop 2s linear forwards;
+    }
+    /* .moveleft {
+      animation: moveleft 2s linear forwards;
+    }
+    .reduction {
+      animation: moveright 2s linear forwards;
+    } */
+    .content {
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      position: relative;
+      background: #F6F8FC;
+    }
+    .content .poke-ball {
+      position: absolute;
+      top: -80px;
+      left: -180px;
+    }
+    .list-box {
+      display: flex;
+      flex-flow: wrap row;
+      justify-content: center;
+      margin-left: 100px;
+      margin-right: 430px;
+    }
+    .poke-mon {
+      flex: 0.5;
+      min-width: 20%;
+      margin: 10px;
+      margin-top: 60px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 2px solid #fff;
+    }
+    span.number {
+      color: #8F9396;
+      text-align: center;
+    }
+    .card {
+      border-radius: 20px;
+      box-shadow: #EDEDED 0 10px 10px;
+      padding: 15px;
+      padding-top: 40px;
+      background-color: white;
+      border-radius: 20px;
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .poke-mon-name {
+      color: #011030;
+      font-family: 'Outfit', sans-serif;
+      text-align: center;
+    }
+    .font-size-12 {
+        font-size: 12px;
+    }
+    .bold {
+        font-weight: bold;
+    }
+    .row {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      width: 100%;
+    }
+    .col {
+      width: 100%;
+      margin: 5px;
+    }
+    .col h5 {
+      text-align: center;
+    }
+    .type-container {
+      border-radius: 5px;
+      padding: 3px 7px;
+      color: black;
+      margin: 5px;
+      margin-top: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: 'Outfit', sans-serif;
+      opacity: 0.8;
+    }
+    .search-pokemon-image {
+      position: absolute;
+      top: -55px;
+      image-rendering: pixelated;
+      transition-duration: 100ms;
+    }
+    .poke-mon:hover .search-pokemon-image {
+      transform: scale(1.2);
+    }
+    .poke-mon:hover {
+      border: 2px solid #e0e0e0;
+    }
+    .loading-select {
+      position: fixed;
+      width: 350px;
+      right: 30px;
+      bottom: 0;
+      top: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loading-select img {
+      animation: rotate 2s linear infinite;
+      width: 100px;
+    }
+    .pokemon-info.card {
+      position: fixed;
+      width: 350px;
+      right: 30px;
+      bottom: 0;
+      top: 200px;
+      transition: all 2s;
+    }
+    .pokemon-info .current-pokemon-image {
+      position: absolute;
+      image-rendering: pixelated;
+      top: 0px;
+      transform: translateY(-80%);
+      margin: 0 auto;
+      right: 0;
+      left: 0;
+    }
+    .current-pokemon-description {
+      color: #8F9396;
+      margin-top: 10px;
+    }
+    .current-pokemon-ability {
+      width: 100%;
+      background-color: #F6F8FC;
+      padding: 8px 0;
+      border-radius: 30px;
+      margin: 5px;
+      text-align: center;
+    }
+    .current-pokemon-statu {
+      background: #F6F8FC;
+      display: flex;
+      padding: 5px;
+      border-radius: 30px;
+      margin: 5px;
+      display: flex;
+      flex-direction: column;
+    }
+    .current-pokemon-statu div {
+      border-radius: 50%;
+      height: 25px;
+      width: 25px;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+    }
+    .current-pokemon-statu h5 {
+      margin: 6px 0;
+      text-align: center;
+    }
+    .current-pokemon-evolution {
+      min-height: 74px;
+      min-width: 74px;
+      cursor: pointer;
+      border-radius: 30%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .row-evolution {
+      align-items: center;
+    }
+    .current-pokemon-evolution:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+    .current-pokemon-evolution-level {
+      width: 50px;
+      background-color: #F6F8FC;
+      padding: 8px 0;
+      border-radius: 30px;
+      margin: 5px;
+      height: 12px;
+      text-align: center;
+    }
+    h2 {
+      text-align: center;
+    }
+    .pokemon-info-hide {
+      transform: translateX(150%);
+    }
+    .search-box {
+      position: relative;
+      margin: 30px 10px;
+      border-radius: 20px;
+      box-shadow: #EDEDED 0 10px 10px;
+      padding: 15px;
+      background-color: white;
+      margin-left: 100px;
+      margin-right: 430px;
+      height: 70px;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading">
+    <img src="/pokdex/pokeball-icon.png" alt="">
+  </div>
+  <div class="content">
+    <img class="poke-ball" src="/pokdex/pokeball-icon.png" alt="">
+    <div class="search-box">
+    </div>
+    <div id="list-box" class="list-box">
+    </div>
+    <div class="loading-select">
+      <img src="/pokdex/pokeball-icon.png" alt="">
+    </div>
+    <div id="pokemon-info" class="pokemon-info card">
+      <img src="/pokdex/no-pokemon-selected-image.png" class="current-pokemon-image" />
+      <h2>Select a Pokemon to display here.</h2>
+    </div>
+  </div>
+  <script>
+    const loading = document.querySelector('.loading');
+    const pokemonInfoCard = document.querySelector('#pokemon-info');
+    const TYPE_COUNT = 18;
+    const pokemons = [];
+    const typeColors = {
+      'normal': '#BCBCAC',
+      'fighting': '#BC5442',
+      'flying': '#669AFF',
+      'poison': '#AB549A',
+      'ground': '#DEBC54',
+      'rock': '#BCAC66',
+      'bug': '#ABBC1C',
+      'ghost': '#6666BC',
+      'steel': '#ABACBC',
+      'fire': '#FF421C',
+      'water': '#2F9AFF',
+      'grass': '#78CD54',
+      'electric': '#FFCD30',
+      'psychic': '#FF549A',
+      'ice': '#78DEFF',
+      'dragon': '#7866EF',
+      'dark': '#785442',
+      'fairy': '#FFACFF',
+      'shadow': '#0E2E4C'
+    };
+    const statuColors = {
+      HP: '#df2140',
+      ATK: '#ff994d',
+      DEF: '#eecd3d',
+      SpA: '#85ddff',
+      SpD: '#96da83',
+      SPD: '#fb94a8'
+    }
+    const statuMap = {
+      hp: 'HP',
+      attack: 'ATK',
+      defense: 'DEF',
+      'special-attack': 'SpA',
+      'special-defense': 'SpD',
+      speed: 'SPD',
+    }
+    loading.classList.add('movetop');
+    async function req(url) {
+      let response = await fetch(url);
+      let responseAsJson = await response.json();
+      return responseAsJson
+    } 
+
+    // 请求口袋怪兽数据
+    async function getAllNames() {
+        const responseAsJson = await req('https://pokeapi.co/api/v2/pokemon/?limit=898');
+        for (let i = 0; i < responseAsJson.results.length; i++) {
+            let name = responseAsJson.results[i].name
+            name = name.charAt(0).toUpperCase() + name.slice(1)
+            pokemons.push({
+                id: i + 1,
+                name: name,
+                img: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${i + 1}.png`,
+                types: []
+            });
+        };
+        getTypes()
+    };
+    async function getTypes() {
+      for (let i = 1; i <= TYPE_COUNT; i++) {
+        const responseAsJson = await req('https://pokeapi.co/api/v2/type/' + i);
+        for (let j = 0; j < responseAsJson.pokemon.length; j++) {
+          let name = responseAsJson.pokemon[j].pokemon.name;
+          name = name.charAt(0).toUpperCase() + name.slice(1)
+          const pokemon = pokemons.find(pokemon => pokemon.name === name);
+          pokemon && pokemon.types.push(responseAsJson.name);
+        }
+      }
+      renderPokeMon();
+    }
+    const pokemonInfoMap = {}
+    async function getPokemonInfo(id) {
+      const urlPokemon = 'https://pokeapi.co/api/v2/pokemon/' + id;
+      const urlSpecies = 'https://pokeapi.co/api/v2/pokemon-species/' + id;
+      const pokemonInfo = await req(urlPokemon);
+      const pokemonSpecies = await req(urlSpecies);
+      const pokemonEvolution = await req(pokemonSpecies.evolution_chain.url);
+      const evolution_chain_img = handleEvolutionImg(pokemonEvolution.chain);
+      const evolution_chain_level = handleEvolutionLevel(pokemonEvolution.chain);
+      pokemonInfoMap[id] = {
+        id: pokemonInfo.id,
+        name: pokemonInfo.name,
+        giftImg: id >= 650 ?
+          'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/' + pokemonInfo.id + '.png' :
+          'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/' + pokemonInfo.id + '.gif',
+        types: pokemonInfo.types.map(type => type.type.name),
+        abilities: pokemonInfo.abilities.map(ability => ability.ability.name),
+        status: pokemonInfo.stats.map(status => {
+          return {
+            name: statuMap[status.stat.name],
+            value: status.base_stat
+          }
+        }),
+        height: pokemonInfo.height,
+        weight: pokemonInfo.weight,
+        evolution_chain_img,
+        evolution_chain_level,
+        flavor_text_entries: pokemonSpecies.flavor_text_entries[0].flavor_text
+      }
+
+    };
+
+    function handleEvolutionImg(pokemonEvolution) {
+      const imgs = [];
+      while (pokemonEvolution && pokemonEvolution.species) {
+        imgs.push('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + pokemonEvolution.species.url.replace('https://pokeapi.co/api/v2/pokemon-species/', '').replace('/', '') + '.png')
+        pokemonEvolution = pokemonEvolution.evolves_to[0];
+      }
+      return imgs;
+    }
+    function handleEvolutionLevel(pokemonEvolution) {
+      const levels = [];
+      while (pokemonEvolution && pokemonEvolution.species) {
+        if (pokemonEvolution.evolution_details.length) {
+          levels.push(pokemonEvolution.evolution_details[0].min_level)
+        }
+        pokemonEvolution = pokemonEvolution.evolves_to[0];
+      }
+      return levels;
+    }
+    function renderPokeMon() {
+      const listBox = document.querySelector('#list-box');
+      listBox.addEventListener('click', async (e) => {
+        const target = e.target;
+        if (target.id) {
+          pokemonInfoCard.classList.add('pokemon-info-hide');
+          const id = target.id;
+          if (!pokemonInfoMap[id]) {
+            await getPokemonInfo(id)
+          }
+          renderPokmonInfoCard(pokemonInfoMap[id])
+        }
+      })
+      const innerHTML = pokemons.map(pokemon => {
+        return `
+          <div id="${pokemon.id}" class="poke-mon card">
+            <img id="${pokemon.id}" class="search-pokemon-image" src="${pokemon.img}" alt="" />
+            <span id="${pokemon.id}" class="number font-size-12 bold">N° ${pokemon.id}</span>
+            <h3 id="${pokemon.id}" class="poke-mon-name">${pokemon.name}</h3>
+            <div id="${pokemon.id}" class="row">
+              ${pokemon.types.map(type => {
+                return `<div id="${pokemon.id}" class="type-container" style="background-color: ${typeColors[type]};">${type.charAt(0).toUpperCase() + type.slice(1)}</div>`
+              }).join('')}
+            </div>
+          </div>`
+      }).join('');
+      listBox.innerHTML = innerHTML;
+    }
+    const renderPokmonInfoCard = (pokemon) => {
+      const pokemonInfoCard = document.querySelector('#pokemon-info');
+      pokemonInfoCard.innerHTML = `
+        <img src="${pokemon.giftImg}" style="height: ${pokemon.height * 10}px" alt="" class="current-pokemon-image" />
+        <span class="number font-size-12 bold">N° ${pokemon.id}</span>
+        <h3 class="poke-mon-name">${pokemon.name.charAt(0).toUpperCase() + pokemon.name.slice(1)}</h3>
+        <div class="row">
+          ${pokemon.types.map(type => {
+            return `<div class="type-container" style="background-color: ${typeColors[type]};">${type.charAt(0).toUpperCase() + type.slice(1)}</div>`
+          }).join('')}
+        </div>
+        <h4 class="poke-mon-name">Pokedex Entry</4>
+        <div class="current-pokemon-description">${pokemon.flavor_text_entries}</div>
+        <div class="row">
+          <div class="col">
+            <h4>Weight</h4>
+            <div class="current-pokemon-ability">${pokemon.weight} kg</div>
+          </div>
+          <div class="col">
+            <h4>Height</h4>
+            <div class="current-pokemon-ability">${pokemon.height} m</div>
+          </div>
+        </div>
+        <h4 class="poke-mon-name">Abilities</h4>
+        <div class="row">
+          ${pokemon.abilities.map(ability => {
+            return `<div class="current-pokemon-ability">${ability.charAt(0).toUpperCase() + ability.slice(1)}</div>`
+          }).join('')}
+          </div>
+        </div>
+        <h4 class="poke-mon-name">Stats</h4>
+        <div class="row">
+          ${pokemon.status.map(statu => {
+            return `<div class="current-pokemon-statu">
+                <div style="background: ${statuColors[statu.name]}">${statu.name}</div>
+                <h5>${statu.value}</h5>
+              </div>`
+          }).join('')}
+          </div>
+        </div>
+        <h4 class="poke-mon-name">Evolution</h4>
+        <div class="row row-evolution">
+          ${pokemon.evolution_chain_img.map((img, i) => {
+            let r = `<div class="current-pokemon-evolution">
+                <img src="${img}" alt="" />
+              </div>`;
+            if (pokemon.evolution_chain_level[i]) {
+              r += `<div class="current-pokemon-evolution-level font-size-12 bold">
+                lv.${pokemon.evolution_chain_level[i]}
+              </div>`
+            }
+            return r
+          }).join('')}
+        </div>
+      `
+      pokemonInfoCard.classList.remove('pokemon-info-hide');
+    }
+    getAllNames();
+  </script>
+</body>
+</html>
