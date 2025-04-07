@@ -2,6 +2,7 @@ const express = require('express')
 const app = express();
 const port = 8080;
 const cors = require('cors');
+const Chance = require('chance');
 const axios = require('axios'); // 用于发起 HTTP 请求
 const fs = require('fs').promises; // 使用 promises 版本的 fs
 const path = require('path');
@@ -24,6 +25,8 @@ app.use(express.static('public'))
 app.use(cors());
 
 
+// 创建 Chance 实例
+const chance = new Chance();
 
 
 const NEWS_FILE = path.join(__dirname, 'news.json');
@@ -294,6 +297,106 @@ app.get('/store_movies', (req, res) => {
   res.send({code: 0, message: '获取成功', data: []});
 })
 
+const mateImgUrlList = [
+  '/images/animals1.jpg',
+  '/images/animals2.jpg',
+  '/images/animals3.jpg',
+  '/images/normal1.jpg',
+  '/images/normal2.jpg',
+  '/images/normal3.jpg',
+  '/images/normal4.jpg',
+  '/images/normal5.jpg',
+]
+const mateImgUrlMap = {
+  0: [176, 263],
+  1: [176, 263],
+  2: [176, 132],
+  3: [176, 263],
+  4: [176, 263],
+  5: [176, 219],
+  6: [176, 132],
+  7: [176, 132],
+}
+// 生成模拟数据的函数
+const generateMockData1 = (count) => {
+  return Array.from({ length: count }, (_, index) => {
+    const imgrci = chance.integer({ min: 3, max: 7 });
+
+    return {
+      id: index + 1,
+      title: chance.sentence({ words: 5 }), // 随机生成 5 个词的标题
+      imageUrl: mateImgUrlList[imgrci], 
+      imgWith: mateImgUrlMap[imgrci][0],
+      imgHeight: index%5 === 0 ? 312 : mateImgUrlMap[imgrci][1],
+      type: index % 5 === 0 ? 'video' : 'img',
+      videoUrl: index % 5 === 0 ? '/101942_1743580786.mp4' : '',
+      user: {
+        id: chance.integer({ min: 1, max: 1000 }), // 随机用户 ID
+        username: chance.name(), // 随机用户名
+        avatar: mateImgUrlList[chance.integer({ min: 0, max: 4 })], // 随机头像
+      },
+    }
+  });
+};
+const generateMockData2 = (count) => {
+  return Array.from({ length: count }, (_, index) => {
+    const imgrci = chance.integer({ min: 0, max: 2 });
+    return {
+      id: index + 1,
+      title: chance.sentence({ words: 5 }), // 随机生成 5 个词的标题
+      imageUrl: mateImgUrlList[imgrci], 
+      imgWith: mateImgUrlMap[imgrci][0],
+      imgHeight: index%5 === 0 ? 312 : mateImgUrlMap[imgrci][1],
+      type: index % 5 === 0 ? 'video' : 'img',
+      videoUrl: index % 5 === 0 ? '/100721_1743403922.mp4' : '',
+      user: {
+        id: chance.integer({ min: 1, max: 1000 }), // 随机用户 ID
+        username: chance.name(), // 随机用户名
+        avatar: mateImgUrlList[chance.integer({ min: 0, max: 4 })], // 随机头像
+      },
+    }
+  });
+}
+
+const mockMateData1 = generateMockData1(100);
+const mockMateData2 = generateMockData2(100);
+app.get('/mateapp', (req, res) => {
+  const page = parseInt(req.query.page) || 1; // 当前页码
+  const limit = parseInt(req.query.limit) || 10; // 每页数量
+  const type = req.query.type || '';
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const mockMateData = type === 'normal' ? mockMateData1 : mockMateData2
+
+  const totalItems = mockMateData.length;
+  const totalPages = Math.ceil(totalItems / limit);
+
+  // 检查分页范围
+  if (startIndex >= totalItems) {
+    res.send({code: 0, message: '获取成功', data: {
+      items: [],
+      pagination: {
+        currentPage: page,
+        pageSize: limit,
+        totalItems: totalItems,
+        totalPages: totalPages,
+      },
+    }});
+    return;
+  }
+
+  // 分页数据
+  const paginatedData = mockMateData.slice(startIndex, endIndex);
+  res.send({code: 0, message: '获取成功', data: {
+    items: paginatedData,
+    pagination: {
+      currentPage: page,
+      pageSize: limit,
+      totalItems: totalItems,
+      totalPages: totalPages,
+    },
+  }});
+})
 
 
 app.listen(port, () => {

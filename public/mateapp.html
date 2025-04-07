@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下拉刷新</title>
+  <style>
+    body,html {
+      margin: 0;
+      padding: 0;
+    }
+    #refresh-container {
+      position: relative;
+      height: 100vh;
+      overflow: auto;
+    }
+    #pull-to-refresh {
+      position: absolute;
+      top: -50px;
+      height: 50px;
+      width: 100%;
+      text-align: center;
+      line-height: 50px;
+      transition: top 0.3s;
+      z-index: 5;
+    }
+    .refreshing #pull-to-refresh {
+      top: 0;
+    }
+    #content {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+    }
+    #content > div {
+      width: 49%;
+    }
+    .item {
+      position: relative;
+      background: #ececec;
+      padding: 5px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+    }
+    .item svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+      transform: scale(2);
+    }
+    .item > img {
+      width: 100%;
+    }
+    .item > video {
+      width: 100%;
+    }
+    #loading {
+      text-align: center;
+      padding: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="refresh-container">
+    <div id="pull-to-refresh">下拉刷新...</div>
+    <div id="content">
+      <div id="column1"></div>
+      <div id="column2"></div>
+    </div>
+    <div id="loading">加载中...</div>
+  </div>
+
+  <script>
+    const container = document.getElementById('refresh-container');
+    const refreshEl = document.getElementById('pull-to-refresh');
+    const content = document.getElementById('content')
+    const column1 = document.getElementById('column1')
+    const column2 = document.getElementById('column2')
+    const loadingEl = document.getElementById('loading');
+    const type = new URLSearchParams(window.location.search).get('type');
+    let startY = 0;
+    let pulling = false;
+    let isRefshing = false;
+    let isLoading = false;
+    let isFinshed = false;
+    let page = 0;
+    let leftHeight = 0;
+    let rightHeight = 0;
+    let dataList = [];
+
+    container.addEventListener('touchstart', (e) => {
+      if (container.scrollTop === 0) {
+        startY = e.touches[0].pageY;
+        pulling = true;
+      }
+    });
+
+    container.addEventListener('touchmove', (e) => {
+      if (!pulling) return;
+      const moveY = e.touches[0].pageY - startY;
+      if (moveY > 0 && moveY < 100) {
+        refreshEl.style.top = `${-50 + moveY / 2}px`;
+      }
+    });
+    container.addEventListener('touchend', (e) => {
+      if (!pulling) return;
+      pulling = false;
+      const moveY = e.changedTouches[0].pageY - startY;
+      if (moveY > 80) {
+        isRefshing = true;
+        isLoading = true;
+        page = 0;
+        leftHeight = 0;
+        rightHeight = 0;
+        container.classList.add('refreshing');
+        refreshEl.textContent = '正在刷新...';
+        loadDate(0, () => {
+          isRefshing = false;
+          isLoading = false;
+          refreshEl.style.top = '-50px';
+          refreshEl.textContent = '下拉刷新...';
+          container.classList.remove('refreshing');
+        });
+      } else {
+        refreshEl.style.top = '-50px';
+      }
+    });
+
+    container.addEventListener('scroll', (e) => {
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight;
+      const clientHeight = container.clientHeight;
+      if (scrollHeight - scrollTop - clientHeight <= 50 && !isRefshing && !isLoading && !isFinshed) {
+        isLoading = true;
+        loadDate(++page)
+      }
+    })
+
+    content.addEventListener('click', (e) => {
+      if (e.target.play) {
+        e.target.play()
+      }
+    })
+
+    async function req(url) {
+      let response = await fetch(url);
+      let responseAsJson = await response.json();
+      return responseAsJson
+    } 
+    const loadDate = (page, cb) => {
+      if (!page) {
+        column1.innerHTML = '';
+        column2.innerHTML = '';
+        dataList = [];
+      } else {
+        loadingEl.style.display = 'block';
+      }
+      req(`/mateapp?page=${page}&type=${type || ''}`).then(res => {
+        const { data } = res;
+        const { items } = data;
+        if (!items || !items.length ) {
+          loadingEl.style.display = 'block';
+          isFinshed = true;
+          loadingEl.innerHTML = '没有更多了'
+        }
+        items.forEach(element => {
+          let addEle = leftHeight < rightHeight ? column1 : column2
+          console.log()
+          dataList.push(element)
+          const d = document.createElement('div');
+          d.innerHTML = `
+            <div class="item">
+              ${element.type === 'video' ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2.33301 7.99961L2.33301 1.59961L7.66634 4.79961L2.33301 7.99961Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="square" stroke-linejoin="round"/>
+                </svg>` : ''}
+              ${element.type === 'img' ? `<img src="${element.imageUrl}" />` : `<video src=${element.videoUrl}>`}
+               <div>
+               ${element.title}
+                </div> 
+            </div>`;
+          leftHeight < rightHeight ? (leftHeight += (element.imgHeight+20)) : (rightHeight += (element.imgHeight+20));
+          addEle.appendChild(d)
+        });
+      })
+      if (cb) {
+        cb();
+      }
+      isLoading = false;
+    }
+    loadDate(0)
+  </script>
+</body>
+</html>
