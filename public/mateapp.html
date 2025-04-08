@@ -118,6 +118,8 @@
         rightHeight = 0;
         container.classList.add('refreshing');
         refreshEl.textContent = '正在刷新...';
+        isFinshed = false;
+        loadingEl.innerHTML = '加载中...'
         loadDate(0, () => {
           isRefshing = false;
           isLoading = false;

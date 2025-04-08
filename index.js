@@ -308,14 +308,14 @@ const mateImgUrlList = [
   '/images/normal5.jpg',
 ]
 const mateImgUrlMap = {
-  0: [176, 263],
-  1: [176, 263],
-  2: [176, 132],
-  3: [176, 263],
-  4: [176, 263],
-  5: [176, 219],
+  0: [176, 272],
+  1: [176, 272],
+  2: [176, 136],
+  3: [181, 272],
+  4: [181, 272],
+  5: [181, 226],
   6: [176, 132],
-  7: [176, 132],
+  7: [181, 121],
 }
 // 生成模拟数据的函数
 const generateMockData1 = (count) => {
@@ -358,8 +358,8 @@ const generateMockData2 = (count) => {
   });
 }
 
-const mockMateData1 = generateMockData1(100);
-const mockMateData2 = generateMockData2(100);
+const mockMateData1 = generateMockData1(40);
+const mockMateData2 = generateMockData2(40);
 app.get('/mateapp', (req, res) => {
   const page = parseInt(req.query.page) || 1; // 当前页码
   const limit = parseInt(req.query.limit) || 10; // 每页数量
